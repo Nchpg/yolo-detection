@@ -61,13 +61,12 @@ latency, rate and box count are shown throughout. The NMS threshold is fixed at
 the standard 0.45.
 
 Inference is much slower than playback, so the video would otherwise run ahead of
-the boxes by a full inference latency. *Show the analysed frame* (on by default)
-paints the frame the boxes belong to over the playing video: picture and boxes
-swap together and never disagree, at the cost of a choppier picture. Turn it off
-to watch the raw video play smoothly with lagging boxes.
+the boxes by a full inference latency. The canvas therefore shows the frame the
+boxes were computed from: picture and boxes swap together and never disagree, at
+the cost of a picture that advances at inference pace.
 
-Because that overlay hides the native video controls, the transport bar carries
-its own seek slider. Seeking re-runs inference on the frame you land on.
+Since that overlay hides the native video controls, the transport bar carries its
+own seek slider. Seeking re-runs inference on the frame you land on.
 
 The model is exported without NMS — onnxruntime-web only partially covers the NMS
 operators — so `web/detector.js` does the letterbox, decodes the raw

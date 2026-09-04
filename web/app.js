@@ -24,7 +24,7 @@ const els = {
   video: $('video'), overlay: $('overlay'), stage: $('stage'), hint: $('hint'),
   ledModel: $('led-model'), ledVideo: $('led-video'), ledRun: $('led-run'),
   conf: $('conf'), outConf: $('out-conf'),
-  optLabels: $('opt-labels'), optScores: $('opt-scores'), optSync: $('opt-sync'),
+  optLabels: $('opt-labels'), optScores: $('opt-scores'),
   classes: $('classes'), samples: $('samples'), samplesList: $('samples-list'),
   btnPlay: $('btn-play'), btnSnap: $('btn-snap'),
   seek: $('seek'), time: $('t-time'),
@@ -101,7 +101,6 @@ function bindSliders() {
   sync();
   els.optLabels.addEventListener('change', draw);
   els.optScores.addEventListener('change', draw);
-  els.optSync.addEventListener('change', draw);
 }
 
 function bindDrop(zone, accept, handler) {
@@ -230,9 +229,7 @@ function draw() {
   // Cover the running video with the frame the boxes were computed from, so
   // picture and boxes never disagree. Seeking re-runs inference, so the frame
   // stays correct while paused too.
-  if (els.optSync.checked && state.frameReady) {
-    ctx.drawImage(frames[shownFrame], 0, 0);
-  }
+  if (state.frameReady) ctx.drawImage(frames[shownFrame], 0, 0);
   if (!state.detections.length) return;
 
   // stroke width follows resolution so it stays readable from 480p to 4K

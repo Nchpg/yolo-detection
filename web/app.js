@@ -52,10 +52,12 @@ const pre = document.createElement('canvas');
 const preCtx = pre.getContext('2d', { willReadFrequently: true });
 
 // Inference is far slower than playback, so the video runs ahead of the boxes.
-// We keep a copy of the frame that was actually analysed and display that one,
-// which keeps boxes and pixels in step at the cost of a choppier picture.
-const frame = document.createElement('canvas');
-const frameCtx = frame.getContext('2d');
+// Two buffers: one holds the frame being analysed, the other the frame whose
+// detections are on screen. They swap only once a run completes, so the picture
+// and the boxes always come from the same frame.
+const frames = [document.createElement('canvas'), document.createElement('canvas')];
+const frameCtxs = frames.map((c) => c.getContext('2d'));
+let shownFrame = 0;
 
 /* ---------------- interface ---------------- */
 
@@ -185,8 +187,12 @@ function loadVideo(src, label) {
   els.video.src = src;
   els.video.load();
   els.video.onloadedmetadata = () => {
-    els.overlay.width = frame.width = els.video.videoWidth;
-    els.overlay.height = frame.height = els.video.videoHeight;
+    els.overlay.width = els.video.videoWidth;
+    els.overlay.height = els.video.videoHeight;
+    for (const c of frames) {
+      c.width = els.video.videoWidth;
+      c.height = els.video.videoHeight;
+    }
     els.stage.classList.remove('empty');
     setLed(els.ledVideo, 'on', label);
     state.frame = 0;
@@ -219,7 +225,7 @@ function draw() {
   // While paused the canvas stays transparent, so the video and its native
   // controls remain usable and the boxes already match what is on screen.
   if (els.optSync.checked && state.frameReady && !els.video.paused) {
-    ctx.drawImage(frame, 0, 0);
+    ctx.drawImage(frames[shownFrame], 0, 0);
   }
   if (!state.detections.length) return;
 
@@ -277,16 +283,20 @@ async function infer() {
   setLed(els.ledRun, 'busy');
   const t0 = performance.now();
   try {
-    // freeze the frame first: the video keeps playing during inference
-    frameCtx.drawImage(els.video, 0, 0, frame.width, frame.height);
-    state.frameReady = true;
+    // freeze the frame into the spare buffer: the video keeps playing meanwhile
+    const next = 1 - shownFrame;
+    frameCtxs[next].drawImage(els.video, 0, 0, frames[next].width, frames[next].height);
 
     const { detections, dims, nc } = await Detector.run(
-      state.session, preCtx, frame,
+      state.session, preCtx, frames[next],
       state.inputW, state.inputH,
-      frame.width, frame.height,
+      frames[next].width, frames[next].height,
       { conf: parseFloat(els.conf.value), iou: parseFloat(els.iou.value) },
     );
+
+    // swap picture and boxes together, never one without the other
+    shownFrame = next;
+    state.frameReady = true;
     state.nc = nc;
     state.detections = detections;
     updateClassCounts(detections);

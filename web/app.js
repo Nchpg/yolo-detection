@@ -358,26 +358,16 @@ els.btnSnap.onclick = () => {
   a.click();
 };
 
-$('btn-model').onclick = () => $('file-model').click();
 $('btn-video').onclick = () => $('file-video').click();
 
-$('file-model').onchange = (e) => {
-  const f = e.target.files[0];
-  if (f) f.arrayBuffer().then((buf) => loadModel(new Uint8Array(buf), f.name));
-};
 $('file-video').onchange = (e) => {
   const f = e.target.files[0];
   if (f) loadVideo(URL.createObjectURL(f), f.name);
 };
 
-bindDrop($('drop-model'), (f) => f.name.endsWith('.onnx'), (f) =>
-  f.arrayBuffer().then((buf) => loadModel(new Uint8Array(buf), f.name)));
-bindDrop($('drop-video'), (f) => f.type.startsWith('video/'), (f) =>
-  loadVideo(URL.createObjectURL(f), f.name));
-bindDrop(els.stage, (f) => f.type.startsWith('video/') || f.name.endsWith('.onnx'), (f) => {
-  if (f.name.endsWith('.onnx')) f.arrayBuffer().then((b) => loadModel(new Uint8Array(b), f.name));
-  else loadVideo(URL.createObjectURL(f), f.name);
-});
+const isVideo = (f) => f.type.startsWith('video/');
+bindDrop($('drop-video'), isVideo, (f) => loadVideo(URL.createObjectURL(f), f.name));
+bindDrop(els.stage, isVideo, (f) => loadVideo(URL.createObjectURL(f), f.name));
 
 /* ---------------- boot ---------------- */
 
@@ -386,13 +376,12 @@ async function boot() {
   bindSliders();
   els.stage.classList.add('empty');
 
-  // a model dropped in web/models/ is picked up automatically
   try {
     const head = await fetch(DEFAULT_MODEL, { method: 'HEAD' });
     if (head.ok) await loadModel(DEFAULT_MODEL, DEFAULT_MODEL.split('/').pop());
-    else say('No model in models/. Drop your best.onnx in panel 01.');
+    else say(`${DEFAULT_MODEL} is missing. Put best.onnx there and reload.`, 'err');
   } catch {
-    say('No model in models/. Drop your best.onnx in panel 01.');
+    say(`${DEFAULT_MODEL} is missing. Put best.onnx there and reload.`, 'err');
   }
 
   // sample videos, if any were copied into web/demo/

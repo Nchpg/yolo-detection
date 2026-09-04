@@ -376,14 +376,15 @@ body {
   overflow: hidden;
 }
 
-/* inset + margin auto centres both elements identically. The canvas carries
-   the video's intrinsic ratio, so they overlap exactly at any stage size. */
+/* Both elements fill the stage and letterbox themselves the same way. The canvas
+   carries the video's intrinsic ratio, so `contain` lands them on the same box at
+   any stage size, and the picture scales up instead of sitting at native size. */
 #video, #overlay {
   position: absolute;
   inset: 0;
-  margin: auto;
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 #overlay { pointer-events: none; }
 
@@ -401,17 +402,6 @@ body {
 }
 .ph-sub { font-size: 11.5px; color: var(--ink-faint); margin: 8px 0 0; letter-spacing: .05em; }
 .ph-sub code { color: var(--ink-dim); }
-
-/* slow sweep, like a control-room monitor */
-.scan {
-  position: absolute;
-  left: 0; right: 0;
-  height: 120px;
-  background: linear-gradient(180deg, transparent, rgba(255,176,0,.045), transparent);
-  animation: sweep 6.5s linear infinite;
-  pointer-events: none;
-}
-@keyframes sweep { from { top: -120px; } to { top: 100%; } }
 
 .corner {
   position: absolute;

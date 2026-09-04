@@ -199,6 +199,26 @@ function loadVideo(src, label) {
   };
 }
 
+/** A loaded video has no decoded frame to draw from until it plays or seeks:
+ *  drawImage then yields a blank canvas and the model finds nothing. Nudging
+ *  the position forces a decode. */
+function frameAvailable() {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
+    const nudge = () => {
+      els.video.addEventListener('seeked', finish, { once: true });
+      const d = els.video.duration;
+      els.video.currentTime = Number.isFinite(d)
+        ? Math.min(els.video.currentTime + 0.001, d)
+        : els.video.currentTime;
+      setTimeout(finish, 300);   // a no-op seek fires no event in some browsers
+    };
+    if (els.video.readyState >= 2) nudge();
+    else els.video.addEventListener('loadeddata', nudge, { once: true });
+  });
+}
+
 function clock(seconds) {
   if (!Number.isFinite(seconds)) return '0:00';
   const m = Math.floor(seconds / 60);
@@ -230,7 +250,10 @@ function draw() {
   // picture and boxes never disagree. Seeking re-runs inference, so the frame
   // stays correct while paused too.
   if (state.frameReady) ctx.drawImage(frames[shownFrame], 0, 0);
-  if (!state.detections.length) return;
+  if (!state.detections.length) {
+    els.tN.textContent = 0;
+    return;
+  }
 
   // stroke width follows resolution so it stays readable from 480p to 4K
   const unit = Math.max(1, Math.round(Math.min(W, H) / 360));
@@ -344,6 +367,7 @@ els.btnPlay.onclick = async () => {
   // analyse the first frame before playing, otherwise the video runs at full
   // speed until the first result lands and only then drops to inference pace
   if (!state.frameReady) {
+    await frameAvailable();
     await infer();
     draw();
   }

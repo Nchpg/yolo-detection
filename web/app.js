@@ -22,7 +22,6 @@ const $ = (id) => document.getElementById(id);
 const els = {
   video: $('video'), overlay: $('overlay'), stage: $('stage'), hint: $('hint'),
   ledModel: $('led-model'), ledVideo: $('led-video'), ledRun: $('led-run'),
-  mName: $('m-name'), mInput: $('m-input'), mOutput: $('m-output'), mEp: $('m-ep'),
   conf: $('conf'), iou: $('iou'), stride: $('stride'),
   outConf: $('out-conf'), outIou: $('out-iou'), outStride: $('out-stride'),
   optLabels: $('opt-labels'), optScores: $('opt-scores'), optSync: $('opt-sync'),
@@ -157,11 +156,9 @@ async function loadModel(source, label) {
     pre.width = state.inputW;
     pre.height = state.inputH;
 
-    els.mName.textContent = label;
-    els.mInput.textContent = `${state.inputW}×${state.inputH}`;
-    els.mOutput.textContent = '—';
-    els.mEp.textContent = ep + (ep === 'wasm' ? ` · ${ort.env.wasm.numThreads} thread(s)` : '');
-    setLed(els.ledModel, 'on', label);
+    // the backend is worth knowing but not worth a panel: it lands in the tooltip
+    const threads = ep === 'wasm' ? ` · ${ort.env.wasm.numThreads} thread(s)` : '';
+    setLed(els.ledModel, 'on', `${label} · ${state.inputW}×${state.inputH} · ${ep}${threads}`);
     say('Model loaded. Drop a video to start detecting.', 'ok');
     refreshPlayButton();
   } catch (err) {
@@ -287,7 +284,7 @@ async function infer() {
     const next = 1 - shownFrame;
     frameCtxs[next].drawImage(els.video, 0, 0, frames[next].width, frames[next].height);
 
-    const { detections, dims, nc } = await Detector.run(
+    const { detections, nc } = await Detector.run(
       state.session, preCtx, frames[next],
       state.inputW, state.inputH,
       frames[next].width, frames[next].height,
@@ -300,8 +297,6 @@ async function infer() {
     state.nc = nc;
     state.detections = detections;
     updateClassCounts(detections);
-
-    if (els.mOutput.textContent === '—') els.mOutput.textContent = `[${dims.join(', ')}]`;
 
     const ms = performance.now() - t0;
     state.msEma = state.msEma === null ? ms : state.msEma * 0.8 + ms * 0.2;

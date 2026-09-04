@@ -31,17 +31,7 @@
   <aside class="rail">
 
     <section class="panel">
-      <h2>01 · Model</h2>
-      <dl class="readout">
-        <div><dt>file</dt><dd id="m-name">—</dd></div>
-        <div><dt>input</dt><dd id="m-input">—</dd></div>
-        <div><dt>output</dt><dd id="m-output">—</dd></div>
-        <div><dt>backend</dt><dd id="m-ep">—</dd></div>
-      </dl>
-    </section>
-
-    <section class="panel">
-      <h2>02 · Video source</h2>
+      <h2>01 · Video source</h2>
       <div class="drop" id="drop-video">
         <input type="file" id="file-video" accept="video/*" hidden>
         <p>Drop a video</p>
@@ -54,7 +44,7 @@
     </section>
 
     <section class="panel">
-      <h2>03 · Settings</h2>
+      <h2>02 · Settings</h2>
       <label class="slider">
         <span>confidence threshold</span><output id="out-conf">0.35</output>
         <input type="range" id="conf" min="0.05" max="0.95" step="0.01" value="0.35">
@@ -73,7 +63,7 @@
     </section>
 
     <section class="panel grow">
-      <h2>04 · Classes</h2>
+      <h2>03 · Classes</h2>
       <ul class="classes" id="classes"></ul>
     </section>
 

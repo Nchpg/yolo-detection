@@ -15,7 +15,7 @@ uv run python src/extract_archive.py     # archive.zip -> data/raw
 uv run python src/prepare_dataset.py     # data.yaml + annotation checks
 # -> run notebooks/train_colab.ipynb on Colab (T4 GPU, ~35 min)
 # -> put best.onnx in web/models/, best.pt at the repo root
-uv run python web/serve.py               # http://localhost:8000
+cd web && python3 -m http.server         # http://localhost:8000
 ```
 
 ## Current model
@@ -75,17 +75,23 @@ operators — so `web/detector.js` does the letterbox, decodes the raw
 WebGPU is tried first, falling back to WASM. Each backend runs a warm-up pass
 before being accepted: a backend can create a session and then hang on the first
 run, which would leave the page stuck with no error. A hang also locks the
-runtime, so recovery reloads the page pinned to WASM. `serve.py` sends
-`Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy: credentialless`,
-which unlocks multithreaded WASM; plain `python -m http.server` also works, but
-single-threaded.
+runtime, so recovery reloads the page pinned to WASM.
+
+`web/vercel.json` sends `Cross-Origin-Opener-Policy` and
+`Cross-Origin-Embedder-Policy: credentialless`. Without them the browser does not
+expose `SharedArrayBuffer` at all, so WASM cannot use more than one thread —
+measured at 1471 ms per frame instead of 737 ms. They are not optional.
+
+A plain `python3 -m http.server` is enough to preview the page locally, with two
+caveats: it sends no isolation headers, so inference runs single-threaded, and it
+ignores range requests, so the seek bar cannot move. `vercel dev` serves `web/`
+with the production headers if you need a faithful local run.
 
 The 38 MB model takes ~1.2 s per frame on WASM/CPU, 30-60 ms on WebGPU. Each
 visitor downloads it in full before the first detection.
 
 `web/` is a static site with no build step, and `web/vercel.json` carries the
-isolation headers. Point the Vercel project's *Root Directory* at `web` and push;
-`.vercelignore` keeps `serve.py` out.
+isolation headers. Point the Vercel project's *Root Directory* at `web` and push.
 
 `best.onnx` and the sample videos are committed on purpose: a Git deployment can
 only serve what the repository contains. Do not move them to Git LFS — Vercel
@@ -112,8 +118,7 @@ web/
 ├── index.html, style.css
 ├── detector.js               letterbox, decode, NMS
 ├── app.js                    interface
-├── serve.py                  local static server (cross-origin isolation, ranges)
-├── vercel.json               the same headers, for deployment
+├── vercel.json               cross-origin isolation headers
 ├── models/best.onnx
 └── demo/                     sample videos
 ```

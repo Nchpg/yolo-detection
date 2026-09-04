@@ -4,10 +4,8 @@ Vehicle and number-plate detection on the Kaggle
 [Traffic vehicles Object Detection](https://www.kaggle.com/datasets/saumyapatel/traffic-vehicles-object-detection)
 dataset: `Car`, `Number Plate`, `Blur Number Plate`, `Two Wheeler`, `Auto`, `Bus`, `Truck`.
 
-Two pieces, nothing else:
-
-- `notebooks/train_colab.ipynb` — trains on Colab and exports `best.onnx`
-- `web/` — a static page where you drop a video and boxes are drawn on top
+Two pieces. `notebooks/train_colab.ipynb` trains on Colab and exports `best.onnx`.
+`web/` is a static page where you drop a video and boxes are drawn on top.
 
 Inference runs entirely in the browser. No video is uploaded anywhere.
 
@@ -19,13 +17,8 @@ T4 GPU*, upload `archive.zip` and run the cells. About 35 minutes.
 The notebook is self-contained: unpack, `data.yaml`, train, per-class mAP,
 confusion matrix, ONNX export, download.
 
-Model sizes, depending on what the front-end should run on:
-
-| model | ONNX | use |
-|---|---|---|
-| `yolo11n` | ~10 MB | phones, modest machines |
-| `yolo11s` | ~38 MB | **default** |
-| `yolo11m` | ~80 MB | accuracy, desktop only |
+ONNX sizes: `yolo11n` 10 MB, `yolo11s` 38 MB, `yolo11m` 80 MB. The front-end
+downloads the whole file, so the choice shows up as page load time.
 
 The export uses `nms=False` and `dynamic=False`: onnxruntime-web only partially
 covers the NMS operators, so `web/detector.js` does the letterbox, decodes the raw
@@ -48,12 +41,12 @@ Drop the resulting `best.onnx` into `web/models/`.
 | Blur Number Plate | 0.617 | 0.764 | 0.719 | 0.383 |
 | **all** | | | **0.831** | **0.572** |
 
-Trained on 732 images / 9 153 boxes, validated on 184 / 1 980. The archive's
-`test` folder has no annotations — 267 raw images and 18 videos — so it is demo
-material; two of those videos are `web/demo/sample1.mp4` and `sample2.mp4`.
+Trained on 732 images and 9 153 boxes, validated on 184 and 1 980. The archive's
+`test` folder carries no annotations, just 267 raw images and 18 videos. Two of
+those videos are `web/demo/sample1.mp4` and `sample2.mp4`.
 
-If `Number Plate` plateaus, raise `IMGSZ` to 960 rather than `EPOCHS`: small
-objects are only seen by the finest detection map.
+The two plate classes are small objects, seen only by the finest of the three
+detection maps. Their mAP responds to `IMGSZ` far more than to `EPOCHS`.
 
 ## Front-end
 
@@ -91,8 +84,8 @@ expose `SharedArrayBuffer` at all, so WASM cannot use more than one thread. They
 are not optional.
 
 `best.onnx` and the sample videos are committed on purpose: a Git deployment can
-only serve what the repository contains. Do not move them to Git LFS — Vercel
-clones without LFS and would deploy the pointer files instead of the model.
+only serve what the repository contains. Git LFS is a trap here: Vercel clones
+without it and would deploy the pointer files instead of the model.
 
 Each visitor downloads the 38 MB model before the first detection.
 

@@ -1,10 +1,9 @@
-"""Configuration commune au projet."""
+"""Shared paths and class list."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Ordre des classes tel que decrit par le dataset Kaggle
-# (labels LabelImg au format YOLOv5, indices 0..6).
+# Class order as annotated in the Kaggle dataset (LabelImg, YOLOv5 format).
 CLASS_NAMES = [
     "Car",
     "Number Plate",
@@ -15,11 +14,11 @@ CLASS_NAMES = [
     "Truck",
 ]
 
-RAW_DIR = ROOT / "data" / "raw"          # copie brute telechargee depuis Kaggle
-DATASET_DIR = ROOT / "data" / "dataset"  # arborescence YOLO generee
-DEMO_DIR = ROOT / "data" / "demo"      # images non annotees + videos de test
+RAW_DIR = ROOT / "data" / "raw"          # unpacked archive
+DATASET_DIR = ROOT / "data" / "dataset"  # generated YOLO layout
+DEMO_DIR = ROOT / "data" / "demo"        # unlabelled images and videos
 DATA_YAML = DATASET_DIR / "data.yaml"
 RUNS_DIR = ROOT / "runs"
 
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff"}
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv", ".webm"}

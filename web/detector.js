@@ -1,14 +1,14 @@
 /* ============================================================
-   Pipeline de detection, sans dependance au DOM de la page.
+   Detection pipeline, independent of the page DOM.
 
-   Le modele est exporte sans NMS (nms=False) : le decodage de la sortie brute
-   et la suppression des non-maxima sont faits ici.
+   The model is exported without NMS (nms=False), so decoding the raw output
+   and running non-maximum suppression happen here.
    ============================================================ */
 
 const Detector = (() => {
 
-  /** Redimensionne en conservant le ratio et complete par du gris 114,
-   *  exactement comme le letterbox d'Ultralytics.
+  /** Resize keeping the aspect ratio and pad with grey 114, exactly like the
+   *  Ultralytics letterbox.
    *  @returns {{tensor: Float32Array, scale: number, dx: number, dy: number}} */
   function letterbox(ctx, source, W, H, srcW, srcH) {
     const scale = Math.min(W / srcW, H / srcH);
@@ -32,8 +32,8 @@ const Detector = (() => {
     return { tensor, scale, dx, dy };
   }
 
-  /** Sortie brute (1, 4+nc, N) : cx, cy, w, h puis un score par classe.
-   *  Les boites reviennent dans le repere de l'image d'origine. */
+  /** Raw output (1, 4+nc, N): cx, cy, w, h then one score per class.
+   *  Boxes come back in the original image's coordinate space. */
   function decode(output, geom, confThr) {
     const [, nAttr, nBox] = output.dims;
     const data = output.data;
@@ -76,8 +76,8 @@ const Detector = (() => {
     return inter / (a.w * a.h + b.w * b.h - inter);
   }
 
-  /** NMS par classe : deux vehicules distincts peuvent se recouvrir fortement,
-   *  et une voiture ne doit jamais eliminer sa propre plaque. */
+  /** Per-class NMS: two distinct vehicles may overlap heavily, and a car must
+   *  never suppress its own number plate. */
   function nms(boxes, thr, nc) {
     const kept = [];
     for (let c = 0; c < nc; c++) {
@@ -93,7 +93,7 @@ const Detector = (() => {
     return kept.sort((a, b) => b.score - a.score);
   }
 
-  /** Chaine complete : pretraitement, inference, decodage, NMS. */
+  /** Full chain: preprocess, inference, decode, NMS. */
   async function run(session, ctx, source, W, H, srcW, srcH, opts) {
     const geom = letterbox(ctx, source, W, H, srcW, srcH);
     const feeds = {};

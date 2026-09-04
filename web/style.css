@@ -1,6 +1,6 @@
 /* ============================================================
-   TRAFFIC VISION — console d'instrumentation
-   charbon + ambre CRT, typographie de signalisation
+   TRAFFIC VISION — instrumentation console
+   charcoal + CRT amber, road-signage typography
    ============================================================ */
 
 :root {
@@ -53,7 +53,7 @@ body {
   flex-direction: column;
 }
 
-/* grain fixe, très léger : donne une matière de moniteur */
+/* fixed, very light grain: gives the page a monitor texture */
 .grain {
   position: fixed;
   inset: 0;
@@ -64,7 +64,7 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
 }
 
-/* ---------------- barre supérieure ---------------- */
+/* ---------------- top bar ---------------- */
 
 .topbar {
   flex: 0 0 auto;
@@ -130,7 +130,7 @@ body {
 .led.err i { background: var(--alert); box-shadow: 0 0 8px var(--alert); }
 @keyframes pulse { to { opacity: .35; } }
 
-/* ---------------- structure ---------------- */
+/* ---------------- layout ---------------- */
 
 .layout {
   flex: 1 1 auto;
@@ -175,7 +175,7 @@ body {
   background: repeating-linear-gradient(90deg, var(--line-hot) 0 3px, transparent 3px 6px);
 }
 
-/* ---------------- zones de dépôt ---------------- */
+/* ---------------- drop zones ---------------- */
 
 .drop {
   border: 1px dashed var(--line-hot);
@@ -224,7 +224,7 @@ body {
 }
 .btn-primary:hover:not(:disabled) { background: #ffc233; border-color: #ffc233; color: #140f00; }
 
-/* ---------------- lectures ---------------- */
+/* ---------------- readouts ---------------- */
 
 .readout { margin: 13px 0 0; }
 .readout > div {
@@ -251,7 +251,7 @@ body {
   max-width: 190px;
 }
 
-/* ---------------- échantillons ---------------- */
+/* ---------------- samples ---------------- */
 
 .samples { margin-top: 12px; }
 .samples-label {
@@ -272,7 +272,7 @@ body {
 }
 .chip:hover { border-color: var(--amber-dim); color: var(--ink); }
 
-/* ---------------- curseurs ---------------- */
+/* ---------------- sliders ---------------- */
 
 .slider { display: block; margin-bottom: 15px; }
 .slider > span {
@@ -352,7 +352,7 @@ body {
 }
 .classes li.hit .cnum { color: var(--amber); }
 
-/* ---------------- scène ---------------- */
+/* ---------------- stage ---------------- */
 
 .stage-wrap {
   display: flex;
@@ -376,9 +376,8 @@ body {
   overflow: hidden;
 }
 
-/* inset + margin auto : centre les deux elements a l'identique.
-   Le canvas a le meme ratio intrinseque que la video, ils se superposent donc
-   exactement quelle que soit la taille de la scene. */
+/* inset + margin auto centres both elements identically. The canvas carries
+   the video's intrinsic ratio, so they overlap exactly at any stage size. */
 #video, #overlay {
   position: absolute;
   inset: 0;
@@ -390,7 +389,7 @@ body {
 
 .stage.empty #video, .stage.empty #overlay { display: none; }
 
-.placeholder { text-align: center; position: relative; padding: 40px 60px; }
+.placeholder { text-align: center; padding: 40px 60px; }
 .stage:not(.empty) .placeholder { display: none; }
 .ph-title {
   font-family: var(--sign);
@@ -403,7 +402,7 @@ body {
 .ph-sub { font-size: 11.5px; color: var(--ink-faint); margin: 8px 0 0; letter-spacing: .05em; }
 .ph-sub code { color: var(--ink-dim); }
 
-/* balayage lent, comme un moniteur de contrôle */
+/* slow sweep, like a control-room monitor */
 .scan {
   position: absolute;
   left: 0; right: 0;

@@ -1,6 +1,6 @@
 /* ============================================================
-   TRAFFIC VISION — interface
-   Le pipeline de detection lui-meme vit dans detector.js.
+   TRAFFIC VISION — user interface
+   The detection pipeline itself lives in detector.js.
    ============================================================ */
 
 const CLASSES = [
@@ -108,18 +108,18 @@ function bindDrop(zone, accept, handler) {
   zone.addEventListener('drop', (ev) => {
     const file = ev.dataTransfer.files[0];
     if (file && accept(file)) handler(file);
-    else say('Type de fichier inattendu.', 'err');
+    else say('Unexpected file type.', 'err');
   });
 }
 
-/* ---------------- chargement du modele ---------------- */
+/* ---------------- model loading ---------------- */
 
 async function loadModel(source, label) {
   setLed(els.ledModel, 'busy');
-  say(`Chargement du modèle ${label} ...`);
+  say(`Loading model ${label} ...`);
   try {
     ort.env.wasm.wasmPaths = ORT_DIST;
-    // le multithread WASM exige l'isolation cross-origin (voir serve.py)
+    // WASM multithreading requires cross-origin isolation (see serve.py)
     ort.env.wasm.numThreads = self.crossOriginIsolated
       ? Math.min(4, navigator.hardwareConcurrency || 2)
       : 1;
@@ -135,10 +135,10 @@ async function loadModel(source, label) {
         ep = providers[0];
         break;
       } catch (err) {
-        console.warn(`backend ${providers[0]} indisponible :`, err.message);
+        console.warn(`backend ${providers[0]} unavailable:`, err.message);
       }
     }
-    if (!session) throw new Error('aucun backend disponible');
+    if (!session) throw new Error('no execution backend available');
 
     state.session = session;
 
@@ -152,17 +152,17 @@ async function loadModel(source, label) {
     els.mOutput.textContent = '—';
     els.mEp.textContent = ep + (ep === 'wasm' ? ` · ${ort.env.wasm.numThreads} thread(s)` : '');
     setLed(els.ledModel, 'on', label);
-    say('Modèle chargé. Déposez une vidéo pour lancer la détection.', 'ok');
+    say('Model loaded. Drop a video to start detecting.', 'ok');
     refreshPlayButton();
   } catch (err) {
     console.error(err);
     setLed(els.ledModel, 'err');
-    say(`Échec du chargement du modèle : ${err.message}`, 'err');
+    say(`Could not load the model: ${err.message}`, 'err');
   }
 }
 
 function inputShape(session) {
-  // selon la version d'onnxruntime-web, les metadonnees ne sont pas toujours exposees
+  // depending on the onnxruntime-web version, metadata is not always exposed
   const meta = session.inputMetadata;
   if (!meta || !meta[0]) return null;
   const dims = meta[0].shape || meta[0].dimensions;
@@ -171,7 +171,7 @@ function inputShape(session) {
   return Number.isInteger(h) && Number.isInteger(w) && h > 0 && w > 0 ? [1, 3, h, w] : null;
 }
 
-/* ---------------- chargement video ---------------- */
+/* ---------------- video loading ---------------- */
 
 function loadVideo(src, label) {
   els.video.src = src;
@@ -189,7 +189,7 @@ function loadVideo(src, label) {
   };
   els.video.onerror = () => {
     setLed(els.ledVideo, 'err');
-    say('Vidéo illisible par le navigateur (essayez un MP4 H.264).', 'err');
+    say('The browser cannot read this video (try an H.264 MP4).', 'err');
   };
 }
 
@@ -199,7 +199,7 @@ function refreshPlayButton() {
   els.btnSnap.disabled = !ready;
 }
 
-/* ---------------- rendu ---------------- */
+/* ---------------- rendering ---------------- */
 
 function draw() {
   const W = els.overlay.width;
@@ -207,7 +207,7 @@ function draw() {
   ctx.clearRect(0, 0, W, H);
   if (!state.detections.length) return;
 
-  // l'epaisseur suit la resolution pour rester lisible en 480p comme en 4K
+  // stroke width follows resolution so it stays readable from 480p to 4K
   const unit = Math.max(1, Math.round(Math.min(W, H) / 360));
   const fontSize = Math.max(11, Math.round(Math.min(W, H) / 34));
   ctx.font = `600 ${fontSize}px 'Saira Condensed', sans-serif`;
@@ -227,7 +227,7 @@ function draw() {
     ctx.lineWidth = unit * 1.6;
     ctx.strokeRect(x, y, w, h);
 
-    // equerres d'angle : lecture instantanee meme sur fond charge
+    // corner brackets: instantly readable even against a busy background
     const arm = Math.min(w, h) * 0.22;
     ctx.lineWidth = unit * 3;
     ctx.beginPath();
@@ -237,7 +237,7 @@ function draw() {
 
     if (!els.optLabels.checked) continue;
 
-    const name = CLASSES[d.cls] ? CLASSES[d.cls].name : `classe ${d.cls}`;
+    const name = CLASSES[d.cls] ? CLASSES[d.cls].name : `class ${d.cls}`;
     const text = els.optScores.checked ? `${name} ${(d.score * 100).toFixed(0)}%` : name;
     const padX = fontSize * 0.34;
     const boxH = fontSize * 1.32;
@@ -253,7 +253,7 @@ function draw() {
   els.tN.textContent = shown;
 }
 
-/* ---------------- boucle ---------------- */
+/* ---------------- loop ---------------- */
 
 async function infer() {
   if (state.busy || !state.session) return;
@@ -283,7 +283,7 @@ async function infer() {
   } catch (err) {
     console.error(err);
     setLed(els.ledRun, 'err');
-    say(`Erreur d'inférence : ${err.message}`, 'err');
+    say(`Inference error: ${err.message}`, 'err');
     state.running = false;
   } finally {
     state.busy = false;
@@ -312,8 +312,8 @@ els.btnPlay.onclick = () => {
   else els.video.pause();
 };
 
-// la boucle suit l'etat reel de la video : le bouton et les controles natifs
-// (lecture, pause, deplacement dans la timeline) la pilotent indifferemment
+// the loop follows the video's real state, so the button and the native
+// controls (play, pause, seeking) drive it interchangeably
 els.video.addEventListener('play', () => {
   state.running = true;
   els.btnPlay.textContent = '⏸ Pause';
@@ -321,7 +321,7 @@ els.video.addEventListener('play', () => {
 });
 ['pause', 'ended'].forEach((ev) => els.video.addEventListener(ev, () => {
   state.running = false;
-  els.btnPlay.textContent = '▶ Lancer';
+  els.btnPlay.textContent = '▶ Start';
 }));
 els.video.addEventListener('seeked', () => { if (els.video.paused) infer().then(draw); });
 
@@ -359,29 +359,29 @@ bindDrop(els.stage, (f) => f.type.startsWith('video/') || f.name.endsWith('.onnx
   else loadVideo(URL.createObjectURL(f), f.name);
 });
 
-/* ---------------- demarrage ---------------- */
+/* ---------------- boot ---------------- */
 
 async function boot() {
   buildClassList();
   bindSliders();
   els.stage.classList.add('empty');
 
-  // modele depose dans web/models/ : on le prend automatiquement
+  // a model dropped in web/models/ is picked up automatically
   try {
     const head = await fetch(DEFAULT_MODEL, { method: 'HEAD' });
     if (head.ok) await loadModel(DEFAULT_MODEL, DEFAULT_MODEL.split('/').pop());
-    else say('Aucun modèle dans models/. Déposez votre best.onnx dans le panneau 01.');
+    else say('No model in models/. Drop your best.onnx in panel 01.');
   } catch {
-    say('Aucun modèle dans models/. Déposez votre best.onnx dans le panneau 01.');
+    say('No model in models/. Drop your best.onnx in panel 01.');
   }
 
-  // videos d'exemple si elles ont ete copiees dans web/demo/
+  // sample videos, if any were copied into web/demo/
   const found = [];
   for (const src of SAMPLE_VIDEOS) {
     try {
       const r = await fetch(src, { method: 'HEAD' });
       if (r.ok) found.push(src);
-    } catch { /* absente, on ignore */ }
+    } catch { /* missing, ignore */ }
   }
   if (found.length) {
     els.samples.hidden = false;

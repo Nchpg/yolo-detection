@@ -1,7 +1,7 @@
 [project]
 name = "traffic-yolo"
 version = "0.1.0"
-description = "Detection de vehicules (Car, Number Plate, Blur Number Plate, Two Wheeler, Auto, Bus, Truck) avec YOLO"
+description = "Vehicle and number-plate detection with YOLO, with in-browser video inference"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
@@ -21,8 +21,8 @@ dependencies = [
 
 [tool.uv]
 package = false
-# ultralytics tire opencv-python (build GUI) qui exige libxcb/libGL.
-# On le neutralise : opencv-python-headless fournit le meme module cv2.
+# ultralytics pulls opencv-python (GUI build) which needs libxcb/libGL.
+# Drop it: opencv-python-headless provides the same cv2 module.
 override-dependencies = ["opencv-python; python_version < '0'"]
 
 [tool.uv.sources]

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TRAFFIC VISION — détection véhicules</title>
+<title>TRAFFIC VISION — vehicle detection</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -17,12 +17,12 @@
   <div class="brand">
     <span class="brand-mark">◧</span>
     <h1>TRAFFIC<span>VISION</span></h1>
-    <span class="brand-sub">détection véhicules · YOLO · onnxruntime-web</span>
+    <span class="brand-sub">vehicle detection · YOLO · onnxruntime-web</span>
   </div>
   <div class="leds">
-    <div class="led" id="led-model"><i></i><span>MODÈLE</span></div>
+    <div class="led" id="led-model"><i></i><span>MODEL</span></div>
     <div class="led" id="led-video"><i></i><span>SOURCE</span></div>
-    <div class="led" id="led-run"><i></i><span>INFÉRENCE</span></div>
+    <div class="led" id="led-run"><i></i><span>INFERENCE</span></div>
   </div>
 </header>
 
@@ -31,49 +31,49 @@
   <aside class="rail">
 
     <section class="panel">
-      <h2>01 · Modèle</h2>
+      <h2>01 · Model</h2>
       <div class="drop" id="drop-model">
         <input type="file" id="file-model" accept=".onnx" hidden>
-        <p>Déposez <code>best.onnx</code></p>
-        <button class="btn" id="btn-model">Parcourir</button>
+        <p>Drop <code>best.onnx</code></p>
+        <button class="btn" id="btn-model">Browse</button>
       </div>
       <dl class="readout">
-        <div><dt>fichier</dt><dd id="m-name">—</dd></div>
-        <div><dt>entrée</dt><dd id="m-input">—</dd></div>
-        <div><dt>sortie</dt><dd id="m-output">—</dd></div>
+        <div><dt>file</dt><dd id="m-name">—</dd></div>
+        <div><dt>input</dt><dd id="m-input">—</dd></div>
+        <div><dt>output</dt><dd id="m-output">—</dd></div>
         <div><dt>backend</dt><dd id="m-ep">—</dd></div>
       </dl>
     </section>
 
     <section class="panel">
-      <h2>02 · Source vidéo</h2>
+      <h2>02 · Video source</h2>
       <div class="drop" id="drop-video">
         <input type="file" id="file-video" accept="video/*" hidden>
-        <p>Déposez une vidéo</p>
-        <button class="btn" id="btn-video">Parcourir</button>
+        <p>Drop a video</p>
+        <button class="btn" id="btn-video">Browse</button>
       </div>
       <div class="samples" id="samples" hidden>
-        <span class="samples-label">échantillons</span>
+        <span class="samples-label">samples</span>
         <div id="samples-list"></div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>03 · Paramètres</h2>
+      <h2>03 · Settings</h2>
       <label class="slider">
-        <span>seuil de confiance</span><output id="out-conf">0.35</output>
+        <span>confidence threshold</span><output id="out-conf">0.35</output>
         <input type="range" id="conf" min="0.05" max="0.95" step="0.01" value="0.35">
       </label>
       <label class="slider">
-        <span>seuil NMS (IoU)</span><output id="out-iou">0.45</output>
+        <span>NMS threshold (IoU)</span><output id="out-iou">0.45</output>
         <input type="range" id="iou" min="0.10" max="0.90" step="0.01" value="0.45">
       </label>
       <label class="slider">
-        <span>1 image sur</span><output id="out-stride">1</output>
+        <span>process 1 frame in</span><output id="out-stride">1</output>
         <input type="range" id="stride" min="1" max="6" step="1" value="1">
       </label>
-      <label class="check"><input type="checkbox" id="opt-labels" checked><span>afficher les libellés</span></label>
-      <label class="check"><input type="checkbox" id="opt-scores" checked><span>afficher les scores</span></label>
+      <label class="check"><input type="checkbox" id="opt-labels" checked><span>show labels</span></label>
+      <label class="check"><input type="checkbox" id="opt-scores" checked><span>show scores</span></label>
     </section>
 
     <section class="panel grow">
@@ -88,9 +88,8 @@
       <video id="video" playsinline muted loop controls></video>
       <canvas id="overlay"></canvas>
       <div class="placeholder" id="placeholder">
-        <div class="ph-brackets"></div>
-        <p class="ph-title">AUCUN FLUX</p>
-        <p class="ph-sub">chargez un modèle <code>.onnx</code> puis déposez une vidéo</p>
+        <p class="ph-title">NO SIGNAL</p>
+        <p class="ph-sub">load an <code>.onnx</code> model, then drop a video</p>
       </div>
       <div class="scan" aria-hidden="true"></div>
       <span class="corner tl"></span><span class="corner tr"></span>
@@ -98,15 +97,15 @@
     </div>
 
     <div class="transport">
-      <button class="btn btn-primary" id="btn-play" disabled>▶ Lancer</button>
-      <button class="btn" id="btn-snap" disabled>⤓ Capture PNG</button>
+      <button class="btn btn-primary" id="btn-play" disabled>▶ Start</button>
+      <button class="btn" id="btn-snap" disabled>⤓ Snapshot PNG</button>
       <div class="spacer"></div>
-      <div class="gauge"><span class="g-label">latence</span><b id="t-ms">—</b><span class="g-unit">ms</span></div>
-      <div class="gauge"><span class="g-label">cadence</span><b id="t-fps">—</b><span class="g-unit">img/s</span></div>
-      <div class="gauge"><span class="g-label">objets</span><b id="t-n">—</b><span class="g-unit">boîtes</span></div>
+      <div class="gauge"><span class="g-label">latency</span><b id="t-ms">—</b><span class="g-unit">ms</span></div>
+      <div class="gauge"><span class="g-label">rate</span><b id="t-fps">—</b><span class="g-unit">fps</span></div>
+      <div class="gauge"><span class="g-label">objects</span><b id="t-n">—</b><span class="g-unit">boxes</span></div>
     </div>
 
-    <p class="hint" id="hint">Le calcul tourne intégralement dans le navigateur : aucune vidéo n'est envoyée sur un serveur.</p>
+    <p class="hint" id="hint">Everything runs in the browser: no video is uploaded anywhere.</p>
   </section>
 
 </main>

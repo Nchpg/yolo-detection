@@ -80,21 +80,18 @@ single-threaded.
 The 38 MB model takes ~1.2 s per frame on WASM/CPU, 30-60 ms on WebGPU. Each
 visitor downloads it in full before the first detection.
 
-`web/` is a static site with no build step, and `web/vercel.json` already carries
-the isolation headers:
+`web/` is a static site with no build step, and `web/vercel.json` carries the
+isolation headers. Point the Vercel project's *Root Directory* at `web` and push;
+`.vercelignore` keeps `serve.py` out.
+
+`best.onnx` and the sample videos are committed on purpose: a Git deployment can
+only serve what the repository contains. Do not move them to Git LFS — Vercel
+clones without LFS and would deploy the pointer files instead of the model.
+
+After deploying, check the model actually landed:
 
 ```bash
-cd web
-vercel login          # once
-vercel deploy --prod
-```
-
-Deploy from `web/`, not from the repo root, so the dataset and the notebook stay
-out of the upload. The model is gitignored but not vercelignored, so the CLI
-uploads it — check it landed:
-
-```bash
-curl -sI https://<your-deployment>/models/best.onnx | head -1   # expect 200
+curl -sI https://<your-domain>/models/best.onnx | head -1   # expect 200
 ```
 
 ## Layout

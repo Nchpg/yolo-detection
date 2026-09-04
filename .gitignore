@@ -5,5 +5,3 @@ data/
 runs/
 archive.zip
 *.pt
-web/models/*.onnx
-web/demo/*.mp4

@@ -25,7 +25,7 @@ const els = {
   mName: $('m-name'), mInput: $('m-input'), mOutput: $('m-output'), mEp: $('m-ep'),
   conf: $('conf'), iou: $('iou'), stride: $('stride'),
   outConf: $('out-conf'), outIou: $('out-iou'), outStride: $('out-stride'),
-  optLabels: $('opt-labels'), optScores: $('opt-scores'),
+  optLabels: $('opt-labels'), optScores: $('opt-scores'), optSync: $('opt-sync'),
   classes: $('classes'), samples: $('samples'), samplesList: $('samples-list'),
   btnPlay: $('btn-play'), btnSnap: $('btn-snap'),
   tMs: $('t-ms'), tFps: $('t-fps'), tN: $('t-n'),
@@ -40,6 +40,7 @@ const state = {
   busy: false,
   frame: 0,
   detections: [],
+  frameReady: false,
   msEma: null,
   fpsEma: null,
   lastRun: 0,
@@ -49,6 +50,12 @@ const state = {
 const ctx = els.overlay.getContext('2d');
 const pre = document.createElement('canvas');
 const preCtx = pre.getContext('2d', { willReadFrequently: true });
+
+// Inference is far slower than playback, so the video runs ahead of the boxes.
+// We keep a copy of the frame that was actually analysed and display that one,
+// which keeps boxes and pixels in step at the cost of a choppier picture.
+const frame = document.createElement('canvas');
+const frameCtx = frame.getContext('2d');
 
 /* ---------------- interface ---------------- */
 
@@ -98,6 +105,7 @@ function bindSliders() {
   link(els.stride, els.outStride, (v) => v);
   els.optLabels.addEventListener('change', draw);
   els.optScores.addEventListener('change', draw);
+  els.optSync.addEventListener('change', draw);
 }
 
 function bindDrop(zone, accept, handler) {
@@ -177,12 +185,13 @@ function loadVideo(src, label) {
   els.video.src = src;
   els.video.load();
   els.video.onloadedmetadata = () => {
-    els.overlay.width = els.video.videoWidth;
-    els.overlay.height = els.video.videoHeight;
+    els.overlay.width = frame.width = els.video.videoWidth;
+    els.overlay.height = frame.height = els.video.videoHeight;
     els.stage.classList.remove('empty');
     setLed(els.ledVideo, 'on', label);
     state.frame = 0;
     state.detections = [];
+    state.frameReady = false;
     say(`${label} · ${els.video.videoWidth}×${els.video.videoHeight}`, 'ok');
     refreshPlayButton();
     draw();
@@ -205,6 +214,13 @@ function draw() {
   const W = els.overlay.width;
   const H = els.overlay.height;
   ctx.clearRect(0, 0, W, H);
+
+  // While playing, cover the running video with the frame the boxes belong to.
+  // While paused the canvas stays transparent, so the video and its native
+  // controls remain usable and the boxes already match what is on screen.
+  if (els.optSync.checked && state.frameReady && !els.video.paused) {
+    ctx.drawImage(frame, 0, 0);
+  }
   if (!state.detections.length) return;
 
   // stroke width follows resolution so it stays readable from 480p to 4K
@@ -261,10 +277,14 @@ async function infer() {
   setLed(els.ledRun, 'busy');
   const t0 = performance.now();
   try {
+    // freeze the frame first: the video keeps playing during inference
+    frameCtx.drawImage(els.video, 0, 0, frame.width, frame.height);
+    state.frameReady = true;
+
     const { detections, dims, nc } = await Detector.run(
-      state.session, preCtx, els.video,
+      state.session, preCtx, frame,
       state.inputW, state.inputH,
-      els.video.videoWidth, els.video.videoHeight,
+      frame.width, frame.height,
       { conf: parseFloat(els.conf.value), iou: parseFloat(els.iou.value) },
     );
     state.nc = nc;

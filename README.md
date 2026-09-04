@@ -59,6 +59,13 @@ are clipped or dropped and logged to `data/dataset/label_issues.log`.
 Confidence and NMS thresholds are live, frames can be skipped on slow machines,
 classes can be toggled with live counts, latency and rate are shown throughout.
 
+Inference is much slower than playback, so the video would otherwise run ahead of
+the boxes by a full inference latency. *Show the analysed frame* (on by default)
+paints the frame the boxes belong to over the playing video, trading a choppier
+picture for boxes that always match the pixels. Pausing restores the real video
+and its native controls; the boxes still match, since a paused frame is the one
+that was analysed.
+
 The model is exported without NMS — onnxruntime-web only partially covers the NMS
 operators — so `web/detector.js` does the letterbox, decodes the raw
 `[1, 11, 8400]` output and runs per-class NMS in JavaScript.

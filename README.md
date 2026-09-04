@@ -4,23 +4,38 @@ Vehicle and number-plate detection on the Kaggle
 [Traffic vehicles Object Detection](https://www.kaggle.com/datasets/saumyapatel/traffic-vehicles-object-detection)
 dataset: `Car`, `Number Plate`, `Blur Number Plate`, `Two Wheeler`, `Auto`, `Bus`, `Truck`.
 
-Training runs on Colab. Inference runs in the browser — drop a video on a static
-page and boxes are drawn on top. Nothing is uploaded anywhere.
+Two pieces, nothing else:
 
-## Usage
+- `notebooks/train_colab.ipynb` — trains on Colab and exports `best.onnx`
+- `web/` — a static page where you drop a video and boxes are drawn on top
 
-```bash
-uv sync
-uv run python src/extract_archive.py     # archive.zip -> data/raw
-uv run python src/prepare_dataset.py     # data.yaml + annotation checks
-# -> run notebooks/train_colab.ipynb on Colab (T4 GPU, ~35 min)
-# -> put best.onnx in web/models/, best.pt at the repo root
-cd web && python3 -m http.server         # http://localhost:8000
-```
+Inference runs entirely in the browser. No video is uploaded anywhere.
+
+## Training
+
+Open `notebooks/train_colab.ipynb` in Colab, set *Runtime → Change runtime type →
+T4 GPU*, upload `archive.zip` and run the cells. About 35 minutes.
+
+The notebook is self-contained: unpack, `data.yaml`, train, per-class mAP,
+confusion matrix, ONNX export, download.
+
+Model sizes, depending on what the front-end should run on:
+
+| model | ONNX | use |
+|---|---|---|
+| `yolo11n` | ~10 MB | phones, modest machines |
+| `yolo11s` | ~38 MB | **default** |
+| `yolo11m` | ~80 MB | accuracy, desktop only |
+
+The export uses `nms=False` and `dynamic=False`: onnxruntime-web only partially
+covers the NMS operators, so `web/detector.js` does the letterbox, decodes the raw
+`[1, 11, 8400]` output and runs per-class NMS in JavaScript.
+
+Drop the resulting `best.onnx` into `web/models/`.
 
 ## Current model
 
-`yolo11s`, 100 epochs at 640 px, measured on the 184 validation images:
+`yolo11s`, 100 epochs at 640 px, on the 184 validation images:
 
 | class | P | R | mAP50 | mAP50-95 |
 |---|---|---|---|---|
@@ -33,87 +48,58 @@ cd web && python3 -m http.server         # http://localhost:8000
 | Blur Number Plate | 0.617 | 0.764 | 0.719 | 0.383 |
 | **all** | | | **0.831** | **0.572** |
 
-```bash
-uv run python src/evaluate.py --split val
-```
+Trained on 732 images / 9 153 boxes, validated on 184 / 1 980. The archive's
+`test` folder has no annotations — 267 raw images and 18 videos — so it is demo
+material; two of those videos are `web/demo/sample1.mp4` and `sample2.mp4`.
 
-## Dataset
-
-The archive ships its own split. The `test` folder has no annotations — 267 raw
-images and 18 videos — so it is set aside in `data/demo/` and two of those videos
-are used as samples in the front-end.
-
-| split | images | boxes |
-|---|---|---|
-| train | 732 | 9 153 |
-| val | 184 | 1 980 |
-
-`prepare_dataset.py` pairs each image with its `.txt` and validates every
-annotation (field count, class id, `[0, 1]` bounds, degenerate boxes). Problems
-are clipped or dropped and logged to `data/dataset/label_issues.log`.
+If `Number Plate` plateaus, raise `IMGSZ` to 960 rather than `EPOCHS`: small
+objects are only seen by the finest detection map.
 
 ## Front-end
 
-`web/models/best.onnx` is loaded on startup. Drop a video, press *Start*.
+```bash
+cd web && python3 -m http.server      # http://localhost:8000
+```
 
-The confidence threshold is live, classes can be toggled with live counts, and
-latency, rate and box count are shown throughout. The NMS threshold is fixed at
-the standard 0.45.
+The model is loaded on startup. Drop a video, press *Start*. The confidence
+threshold is live, classes can be toggled with live counts, and latency, rate and
+box count are shown throughout.
 
-Inference is much slower than playback, so the video would otherwise run ahead of
-the boxes by a full inference latency. The canvas therefore shows the frame the
-boxes were computed from: picture and boxes swap together and never disagree, at
-the cost of a picture that advances at inference pace.
+**Frames and boxes stay in step.** Inference is much slower than playback, so the
+video would run ahead of the boxes by a full inference latency. The canvas shows
+the frame the boxes were computed from, and the two swap together. The picture
+therefore advances at inference pace, roughly one step per second on CPU.
 
-Since that overlay hides the native video controls, the transport bar carries its
-own seek slider. Seeking re-runs inference on the frame you land on.
+**Backends.** WebGPU is tried first, then WASM. Each runs a warm-up pass before
+being accepted: a backend can create a session and then hang on the first run,
+which would leave the page stuck with no error. A hang also locks the runtime, so
+recovery reloads the page pinned to WASM.
 
-The model is exported without NMS — onnxruntime-web only partially covers the NMS
-operators — so `web/detector.js` does the letterbox, decodes the raw
-`[1, 11, 8400]` output and runs per-class NMS in JavaScript.
+**A local `python3 -m http.server` is degraded**, in two visible ways: no
+isolation headers, so WASM runs single-threaded (1471 ms per frame instead of
+737), and no range requests, so the seek bar cannot move. `vercel dev` serves
+`web/` with the production headers.
 
-WebGPU is tried first, falling back to WASM. Each backend runs a warm-up pass
-before being accepted: a backend can create a session and then hang on the first
-run, which would leave the page stuck with no error. A hang also locks the
-runtime, so recovery reloads the page pinned to WASM.
+## Deployment
+
+`web/` is a static site with no build step. Point the Vercel project's *Root
+Directory* at `web` and push.
 
 `web/vercel.json` sends `Cross-Origin-Opener-Policy` and
 `Cross-Origin-Embedder-Policy: credentialless`. Without them the browser does not
-expose `SharedArrayBuffer` at all, so WASM cannot use more than one thread —
-measured at 1471 ms per frame instead of 737 ms. They are not optional.
-
-A plain `python3 -m http.server` is enough to preview the page locally, with two
-caveats: it sends no isolation headers, so inference runs single-threaded, and it
-ignores range requests, so the seek bar cannot move. `vercel dev` serves `web/`
-with the production headers if you need a faithful local run.
-
-The 38 MB model takes ~1.2 s per frame on WASM/CPU, 30-60 ms on WebGPU. Each
-visitor downloads it in full before the first detection.
-
-`web/` is a static site with no build step, and `web/vercel.json` carries the
-isolation headers. Point the Vercel project's *Root Directory* at `web` and push.
+expose `SharedArrayBuffer` at all, so WASM cannot use more than one thread. They
+are not optional.
 
 `best.onnx` and the sample videos are committed on purpose: a Git deployment can
 only serve what the repository contains. Do not move them to Git LFS — Vercel
 clones without LFS and would deploy the pointer files instead of the model.
 
-After deploying, check the model actually landed:
-
-```bash
-curl -sI https://<your-domain>/models/best.onnx | head -1   # expect 200
-```
+Each visitor downloads the 38 MB model before the first detection.
 
 ## Layout
 
 ```
-best.pt                       PyTorch weights (evaluation, re-export)
 notebooks/train_colab.ipynb   training + ONNX export
-src/
-├── config.py                 classes and paths
-├── extract_archive.py        archive.zip -> data/raw
-├── prepare_dataset.py        data.yaml + annotation validation
-├── evaluate.py               per-class mAP
-└── export_onnx.py            best.pt -> web/models/best.onnx
 web/
 ├── index.html, style.css
 ├── detector.js               letterbox, decode, NMS
@@ -123,11 +109,4 @@ web/
 └── demo/                     sample videos
 ```
 
-## Notes
-
-- `override-dependencies` in `pyproject.toml` drops `opencv-python` (GUI build,
-  needs `libxcb`/`libGL`) in favour of `opencv-python-headless`, which provides
-  the same `cv2` module. Required on NixOS and in containers without X11.
-- Torch is installed CPU-only. For a CUDA machine, swap the `pytorch-cpu` index
-  for `https://download.pytorch.org/whl/cu124`.
-- Ultralytics YOLO11 is AGPL-3.0.
+Ultralytics YOLO11 is AGPL-3.0.

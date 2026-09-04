@@ -14,6 +14,7 @@ const CLASSES = [
 ];
 
 const DEFAULT_MODEL = 'models/best.onnx';
+const NMS_IOU = 0.45;   // standard value; boxes overlapping more than this are merged
 const SAMPLE_VIDEOS = ['demo/sample1.mp4', 'demo/sample2.mp4'];
 const ORT_DIST = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.0/dist/';
 
@@ -22,8 +23,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
   video: $('video'), overlay: $('overlay'), stage: $('stage'), hint: $('hint'),
   ledModel: $('led-model'), ledVideo: $('led-video'), ledRun: $('led-run'),
-  conf: $('conf'), iou: $('iou'), stride: $('stride'),
-  outConf: $('out-conf'), outIou: $('out-iou'), outStride: $('out-stride'),
+  conf: $('conf'), outConf: $('out-conf'),
   optLabels: $('opt-labels'), optScores: $('opt-scores'), optSync: $('opt-sync'),
   classes: $('classes'), samples: $('samples'), samplesList: $('samples-list'),
   btnPlay: $('btn-play'), btnSnap: $('btn-snap'),
@@ -37,7 +37,6 @@ const state = {
   nc: CLASSES.length,
   enabled: CLASSES.map(() => true),
   busy: false,
-  frame: 0,
   detections: [],
   frameReady: false,
   msEma: null,
@@ -96,14 +95,9 @@ function updateClassCounts(dets) {
 }
 
 function bindSliders() {
-  const link = (input, out, fmt) => {
-    const sync = () => { out.textContent = fmt(input.value); };
-    input.addEventListener('input', sync);
-    sync();
-  };
-  link(els.conf, els.outConf, (v) => Number(v).toFixed(2));
-  link(els.iou, els.outIou, (v) => Number(v).toFixed(2));
-  link(els.stride, els.outStride, (v) => v);
+  const sync = () => { els.outConf.textContent = Number(els.conf.value).toFixed(2); };
+  els.conf.addEventListener('input', sync);
+  sync();
   els.optLabels.addEventListener('change', draw);
   els.optScores.addEventListener('change', draw);
   els.optSync.addEventListener('change', draw);
@@ -192,7 +186,6 @@ function loadVideo(src, label) {
     }
     els.stage.classList.remove('empty');
     setLed(els.ledVideo, 'on', label);
-    state.frame = 0;
     state.detections = [];
     state.frameReady = false;
     say(`${label} · ${els.video.videoWidth}×${els.video.videoHeight}`, 'ok');
@@ -288,7 +281,7 @@ async function infer() {
       state.session, preCtx, frames[next],
       state.inputW, state.inputH,
       frames[next].width, frames[next].height,
-      { conf: parseFloat(els.conf.value), iou: parseFloat(els.iou.value) },
+      { conf: parseFloat(els.conf.value), iou: NMS_IOU },
     );
 
     // swap picture and boxes together, never one without the other
@@ -316,10 +309,7 @@ async function infer() {
 }
 
 function onFrame() {
-  if (!els.video.paused && !els.video.ended) {
-    state.frame++;
-    if (state.frame % parseInt(els.stride.value, 10) === 0) infer();
-  }
+  if (!els.video.paused && !els.video.ended) infer();
   draw();
   schedule();
 }

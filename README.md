@@ -56,8 +56,9 @@ are clipped or dropped and logged to `data/dataset/label_issues.log`.
 
 `web/models/best.onnx` is loaded on startup. Drop a video, press *Start*.
 
-Confidence and NMS thresholds are live, frames can be skipped on slow machines,
-classes can be toggled with live counts, latency and rate are shown throughout.
+The confidence threshold is live, classes can be toggled with live counts, and
+latency, rate and box count are shown throughout. The NMS threshold is fixed at
+the standard 0.45.
 
 Inference is much slower than playback, so the video would otherwise run ahead of
 the boxes by a full inference latency. *Show the analysed frame* (on by default)

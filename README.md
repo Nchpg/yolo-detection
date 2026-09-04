@@ -80,14 +80,21 @@ single-threaded.
 The 38 MB model takes ~1.2 s per frame on WASM/CPU, 30-60 ms on WebGPU. Each
 visitor downloads it in full before the first detection.
 
-`web/` is a static site with no build step. On Vercel, add the isolation headers
-to `vercel.json` to keep multithreading:
+`web/` is a static site with no build step, and `web/vercel.json` already carries
+the isolation headers:
 
-```json
-{ "headers": [{ "source": "/(.*)", "headers": [
-  { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-  { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" }
-]}]}
+```bash
+cd web
+vercel login          # once
+vercel deploy --prod
+```
+
+Deploy from `web/`, not from the repo root, so the dataset and the notebook stay
+out of the upload. The model is gitignored but not vercelignored, so the CLI
+uploads it — check it landed:
+
+```bash
+curl -sI https://<your-deployment>/models/best.onnx | head -1   # expect 200
 ```
 
 ## Layout
@@ -105,7 +112,8 @@ web/
 ├── index.html, style.css
 ├── detector.js               letterbox, decode, NMS
 ├── app.js                    interface
-├── serve.py                  static server with cross-origin isolation
+├── serve.py                  local static server (cross-origin isolation, ranges)
+├── vercel.json               the same headers, for deployment
 ├── models/best.onnx
 └── demo/                     sample videos
 ```

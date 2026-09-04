@@ -103,6 +103,31 @@ function bindSliders() {
   els.optScores.addEventListener('change', draw);
 }
 
+/** The samples are known up front, so they are on screen before anything is
+ *  fetched: waiting for the model or for the probes below made them appear
+ *  seconds late and pushed the rest of the panel down. The probes only take
+ *  away what turns out to be missing from web/demo/. */
+function buildSamples() {
+  els.samplesList.innerHTML = '';
+  for (const src of SAMPLE_VIDEOS) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = src.split('/').pop();
+    b.onclick = () => loadVideo(src, b.textContent);
+    els.samplesList.appendChild(b);
+    checkSample(src, b);
+  }
+  els.samples.hidden = !els.samplesList.children.length;
+}
+
+async function checkSample(src, chip) {
+  let ok = false;
+  try { ok = (await fetch(src, { method: 'HEAD' })).ok; } catch { /* missing */ }
+  if (ok) return;
+  chip.remove();
+  els.samples.hidden = !els.samplesList.children.length;
+}
+
 function bindDrop(zone, accept, handler) {
   ['dragenter', 'dragover'].forEach((e) =>
     zone.addEventListener(e, (ev) => { ev.preventDefault(); zone.classList.add('over'); }));
@@ -194,7 +219,7 @@ async function loadModel(source, label) {
     // the backend is worth knowing but not worth a panel: it lands in the tooltip
     const threads = ep === 'wasm' ? ` \u00b7 ${ort.env.wasm.numThreads} thread(s)` : '';
     setLed(els.ledModel, 'on', `${label} \u00b7 ${state.inputW}\u00d7${state.inputH} \u00b7 ${ep}${threads}`);
-    say('Model loaded. Drop a video to start detecting.', 'ok');
+    say('Model loaded. Drop a video or pick a sample.', 'ok');
     refreshPlayButton();
   } catch (err) {
     console.error(err);
@@ -466,6 +491,7 @@ bindDrop(els.stage, isVideo, (f) => loadVideo(URL.createObjectURL(f), f.name));
 async function boot() {
   buildClassList();
   bindSliders();
+  buildSamples();
   els.stage.classList.add('empty');
 
   try {
@@ -474,25 +500,6 @@ async function boot() {
     else say(`${DEFAULT_MODEL} is missing. Put best.onnx there and reload.`, 'err');
   } catch {
     say(`${DEFAULT_MODEL} is missing. Put best.onnx there and reload.`, 'err');
-  }
-
-  // sample videos, if any were copied into web/demo/
-  const found = [];
-  for (const src of SAMPLE_VIDEOS) {
-    try {
-      const r = await fetch(src, { method: 'HEAD' });
-      if (r.ok) found.push(src);
-    } catch { /* missing, ignore */ }
-  }
-  if (found.length) {
-    els.samples.hidden = false;
-    found.forEach((src) => {
-      const b = document.createElement('button');
-      b.className = 'chip';
-      b.textContent = src.split('/').pop();
-      b.onclick = () => loadVideo(src, b.textContent);
-      els.samplesList.appendChild(b);
-    });
   }
 }
 

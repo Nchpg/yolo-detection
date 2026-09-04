@@ -3,26 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TRAFFIC VISION — vehicle detection</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<title>Traffic Vision — vehicle detection</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="grain" aria-hidden="true"></div>
-
 <header class="topbar">
-  <div class="brand">
-    <span class="brand-mark">◧</span>
-    <h1>TRAFFIC<span>VISION</span></h1>
-    <span class="brand-sub">vehicle detection · YOLO</span>
-  </div>
-  <div class="leds">
-    <div class="led" id="led-model"><i></i><span>MODEL</span></div>
-    <div class="led" id="led-video"><i></i><span>SOURCE</span></div>
-    <div class="led" id="led-run"><i></i><span>INFERENCE</span></div>
+  <h1>Traffic Vision</h1>
+  <div class="status">
+    <span class="led" id="led-model"><i></i>Model</span>
+    <span class="led" id="led-video"><i></i>Source</span>
+    <span class="led" id="led-run"><i></i>Inference</span>
   </div>
 </header>
 
@@ -31,30 +22,30 @@
   <aside class="rail">
 
     <section class="panel">
-      <h2>01 · Video source</h2>
+      <h2>Video source</h2>
       <div class="drop" id="drop-video">
         <input type="file" id="file-video" accept="video/*" hidden>
-        <p>Drop a video</p>
+        <p>Drop a video here</p>
         <button class="btn" id="btn-video">Browse</button>
       </div>
       <div class="samples" id="samples" hidden>
-        <span class="samples-label">samples</span>
+        <span class="samples-label">Samples</span>
         <div id="samples-list"></div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>02 · Settings</h2>
+      <h2>Settings</h2>
       <label class="slider">
-        <span>confidence threshold</span><output id="out-conf">0.35</output>
+        <span>Confidence threshold</span><output id="out-conf">0.35</output>
         <input type="range" id="conf" min="0.05" max="0.95" step="0.01" value="0.35">
       </label>
-      <label class="check"><input type="checkbox" id="opt-labels" checked><span>show labels</span></label>
-      <label class="check"><input type="checkbox" id="opt-scores" checked><span>show scores</span></label>
+      <label class="check"><input type="checkbox" id="opt-labels" checked><span>Show labels</span></label>
+      <label class="check"><input type="checkbox" id="opt-scores" checked><span>Show scores</span></label>
     </section>
 
     <section class="panel grow">
-      <h2>03 · Classes</h2>
+      <h2>Classes</h2>
       <ul class="classes" id="classes"></ul>
     </section>
 
@@ -64,20 +55,17 @@
     <div class="stage" id="stage">
       <video id="video" playsinline muted loop></video>
       <canvas id="overlay"></canvas>
-      <div class="placeholder" id="placeholder">
-        <p class="ph-title">NO SIGNAL</p>
-        <p class="ph-sub">drop a video, or pick a sample</p>
-      </div>
+      <p class="placeholder">Drop a video, or pick a sample.</p>
     </div>
 
     <div class="transport">
-      <button class="btn btn-primary" id="btn-play" disabled>▶ Start</button>
-      <button class="btn" id="btn-snap" disabled>⤓ Snapshot PNG</button>
+      <button class="btn btn-primary" id="btn-play" disabled>Start</button>
+      <button class="btn" id="btn-snap" disabled>Save PNG</button>
       <input type="range" id="seek" class="seek" min="0" max="1000" step="1" value="0" disabled>
       <span class="time" id="t-time">0:00 / 0:00</span>
-      <div class="gauge"><span class="g-label">latency</span><b id="t-ms">—</b><span class="g-unit">ms</span></div>
-      <div class="gauge"><span class="g-label">rate</span><b id="t-fps">—</b><span class="g-unit">fps</span></div>
-      <div class="gauge"><span class="g-label">objects</span><b id="t-n">—</b><span class="g-unit">boxes</span></div>
+      <span class="gauge"><b id="t-ms">—</b> <span class="g-unit">ms</span></span>
+      <span class="gauge"><b id="t-fps">—</b> <span class="g-unit">fps</span></span>
+      <span class="gauge"><b id="t-n">—</b> <span class="g-unit">boxes</span></span>
     </div>
 
     <p class="hint" id="hint">Everything runs in the browser: no video is uploaded anywhere.</p>

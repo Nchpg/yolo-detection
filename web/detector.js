@@ -1,9 +1,7 @@
-/* ============================================================
-   Detection pipeline, independent of the page DOM.
-
-   The model is exported without NMS (nms=False), so decoding the raw output
-   and running non-maximum suppression happen here.
-   ============================================================ */
+// Detection pipeline, independent of the page DOM.
+//
+// The model is exported without NMS (nms=False), so decoding the raw output and
+// running non-maximum suppression happen here.
 
 const Detector = (() => {
 

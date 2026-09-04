@@ -1,7 +1,5 @@
-/* ============================================================
-   TRAFFIC VISION — user interface
-   The detection pipeline itself lives in detector.js.
-   ============================================================ */
+// Traffic Vision — user interface.
+// The detection pipeline itself lives in detector.js.
 
 const CLASSES = [
   { name: 'Car',               color: '#ffb000' },
@@ -301,7 +299,7 @@ function draw() {
   // stroke width follows resolution so it stays readable from 480p to 4K
   const unit = Math.max(1, Math.round(Math.min(W, H) / 360));
   const fontSize = Math.max(11, Math.round(Math.min(W, H) / 34));
-  ctx.font = `600 ${fontSize}px 'Saira Condensed', sans-serif`;
+  ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
   ctx.textBaseline = 'alphabetic';
 
   let shown = 0;
@@ -430,12 +428,12 @@ els.video.addEventListener('timeupdate', updateSeek);
 // controls (play, pause, seeking) drive it interchangeably
 els.video.addEventListener('play', () => {
   state.running = true;
-  els.btnPlay.textContent = '⏸ Pause';
+  els.btnPlay.textContent = 'Pause';
   schedule();
 });
 ['pause', 'ended'].forEach((ev) => els.video.addEventListener(ev, () => {
   state.running = false;
-  els.btnPlay.textContent = '▶ Start';
+  els.btnPlay.textContent = 'Start';
 }));
 els.video.addEventListener('seeked', () => { if (els.video.paused) infer().then(draw); });
 

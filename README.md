@@ -72,7 +72,10 @@ The model is exported without NMS — onnxruntime-web only partially covers the 
 operators — so `web/detector.js` does the letterbox, decodes the raw
 `[1, 11, 8400]` output and runs per-class NMS in JavaScript.
 
-WebGPU is tried first, falling back to WASM. `serve.py` sends
+WebGPU is tried first, falling back to WASM. Each backend runs a warm-up pass
+before being accepted: a backend can create a session and then hang on the first
+run, which would leave the page stuck with no error. A hang also locks the
+runtime, so recovery reloads the page pinned to WASM. `serve.py` sends
 `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy: credentialless`,
 which unlocks multithreaded WASM; plain `python -m http.server` also works, but
 single-threaded.

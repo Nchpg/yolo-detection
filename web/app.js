@@ -15,6 +15,8 @@ const CLASSES = [
 
 const DEFAULT_MODEL = 'models/best.onnx';
 const NMS_IOU = 0.45;   // standard value; boxes overlapping more than this are merged
+const WARMUP_MS = 10000;
+const FORCE_WASM = 'traffic-vision:force-wasm';
 const SAMPLE_VIDEOS = ['demo/sample1.mp4', 'demo/sample2.mp4'];
 const ORT_DIST = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.0/dist/';
 
@@ -117,6 +119,41 @@ function bindDrop(zone, accept, handler) {
 
 /* ---------------- model loading ---------------- */
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => {
+      const err = new Error(`${label} timed out after ${ms} ms`);
+      err.timedOut = true;
+      reject(err);
+    }, ms)),
+  ]);
+}
+
+function pinned(key) {
+  try { return sessionStorage.getItem(key) === '1'; } catch { return false; }
+}
+
+function pin(key) {
+  try { sessionStorage.setItem(key, '1'); } catch { /* private mode, ignore */ }
+}
+
+/** Create a session and prove the backend actually runs.
+ *  A backend can accept the model and then fail or hang on the first run, which
+ *  would leave the page stuck with no error. The warm-up also compiles the graph,
+ *  so the first real frame is no slower than the rest. */
+async function openSession(source, providers) {
+  const session = await ort.InferenceSession.create(source, {
+    executionProviders: providers,
+    graphOptimizationLevel: 'all',
+  });
+  const [, , h, w] = inputShape(session) || [1, 3, 640, 640];
+  const feeds = {};
+  feeds[session.inputNames[0]] = new ort.Tensor('float32', new Float32Array(3 * h * w), [1, 3, h, w]);
+  await withTimeout(session.run(feeds), WARMUP_MS, providers[0]);
+  return { session, h, w };
+}
+
 async function loadModel(source, label) {
   setLed(els.ledModel, 'busy');
   say(`Loading model ${label} ...`);
@@ -127,32 +164,38 @@ async function loadModel(source, label) {
       ? Math.min(4, navigator.hardwareConcurrency || 2)
       : 1;
 
-    let session = null;
+    let opened = null;
     let ep = null;
-    for (const providers of [['webgpu'], ['wasm']]) {
+    const forced = pinned(FORCE_WASM);
+    for (const providers of forced ? [['wasm']] : [['webgpu'], ['wasm']]) {
       try {
-        session = await ort.InferenceSession.create(source, {
-          executionProviders: providers,
-          graphOptimizationLevel: 'all',
-        });
+        opened = await openSession(source, providers);
         ep = providers[0];
         break;
       } catch (err) {
-        console.warn(`backend ${providers[0]} unavailable:`, err.message);
+        console.warn(`backend ${providers[0]} unusable:`, err.message);
+        // A backend that fails outright leaves the runtime usable, so the next
+        // one can be tried in place. One that hangs keeps the runtime locked
+        // ("Session already started"), and only a fresh page recovers.
+        if (err.timedOut) {
+          pin(FORCE_WASM);
+          say(`${providers[0]} did not respond, reloading on WASM...`, 'err');
+          location.reload();
+          return;
+        }
       }
     }
-    if (!session) throw new Error('no execution backend available');
+    if (!opened) throw new Error('no execution backend available');
 
-    state.session = session;
-
-    const shape = inputShape(session);
-    if (shape) { state.inputH = shape[2]; state.inputW = shape[3]; }
+    state.session = opened.session;
+    state.inputH = opened.h;
+    state.inputW = opened.w;
     pre.width = state.inputW;
     pre.height = state.inputH;
 
     // the backend is worth knowing but not worth a panel: it lands in the tooltip
-    const threads = ep === 'wasm' ? ` · ${ort.env.wasm.numThreads} thread(s)` : '';
-    setLed(els.ledModel, 'on', `${label} · ${state.inputW}×${state.inputH} · ${ep}${threads}`);
+    const threads = ep === 'wasm' ? ` \u00b7 ${ort.env.wasm.numThreads} thread(s)` : '';
+    setLed(els.ledModel, 'on', `${label} \u00b7 ${state.inputW}\u00d7${state.inputH} \u00b7 ${ep}${threads}`);
     say('Model loaded. Drop a video to start detecting.', 'ok');
     refreshPlayButton();
   } catch (err) {

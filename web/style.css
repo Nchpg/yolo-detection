@@ -403,17 +403,6 @@ body {
 .ph-sub { font-size: 11.5px; color: var(--ink-faint); margin: 8px 0 0; letter-spacing: .05em; }
 .ph-sub code { color: var(--ink-dim); }
 
-.corner {
-  position: absolute;
-  width: 15px; height: 15px;
-  border: 1px solid var(--amber-dim);
-  pointer-events: none;
-}
-.corner.tl { top: 7px; left: 7px; border-right: 0; border-bottom: 0; }
-.corner.tr { top: 7px; right: 7px; border-left: 0; border-bottom: 0; }
-.corner.bl { bottom: 7px; left: 7px; border-right: 0; border-top: 0; }
-.corner.br { bottom: 7px; right: 7px; border-left: 0; border-top: 0; }
-
 /* ---------------- transport ---------------- */
 
 .transport {

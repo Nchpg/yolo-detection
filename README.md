@@ -62,10 +62,12 @@ the standard 0.45.
 
 Inference is much slower than playback, so the video would otherwise run ahead of
 the boxes by a full inference latency. *Show the analysed frame* (on by default)
-paints the frame the boxes belong to over the playing video, trading a choppier
-picture for boxes that always match the pixels. Pausing restores the real video
-and its native controls; the boxes still match, since a paused frame is the one
-that was analysed.
+paints the frame the boxes belong to over the playing video: picture and boxes
+swap together and never disagree, at the cost of a choppier picture. Turn it off
+to watch the raw video play smoothly with lagging boxes.
+
+Because that overlay hides the native video controls, the transport bar carries
+its own seek slider. Seeking re-runs inference on the frame you land on.
 
 The model is exported without NMS — onnxruntime-web only partially covers the NMS
 operators — so `web/detector.js` does the letterbox, decodes the raw

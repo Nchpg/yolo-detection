@@ -63,7 +63,7 @@
 
   <section class="stage-wrap">
     <div class="stage" id="stage">
-      <video id="video" playsinline muted loop controls></video>
+      <video id="video" playsinline muted loop></video>
       <canvas id="overlay"></canvas>
       <div class="placeholder" id="placeholder">
         <p class="ph-title">NO SIGNAL</p>
@@ -77,7 +77,8 @@
     <div class="transport">
       <button class="btn btn-primary" id="btn-play" disabled>▶ Start</button>
       <button class="btn" id="btn-snap" disabled>⤓ Snapshot PNG</button>
-      <div class="spacer"></div>
+      <input type="range" id="seek" class="seek" min="0" max="1000" step="1" value="0" disabled>
+      <span class="time" id="t-time">0:00 / 0:00</span>
       <div class="gauge"><span class="g-label">latency</span><b id="t-ms">—</b><span class="g-unit">ms</span></div>
       <div class="gauge"><span class="g-label">rate</span><b id="t-fps">—</b><span class="g-unit">fps</span></div>
       <div class="gauge"><span class="g-label">objects</span><b id="t-n">—</b><span class="g-unit">boxes</span></div>

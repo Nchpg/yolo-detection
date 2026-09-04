@@ -27,6 +27,7 @@ const els = {
   optLabels: $('opt-labels'), optScores: $('opt-scores'), optSync: $('opt-sync'),
   classes: $('classes'), samples: $('samples'), samplesList: $('samples-list'),
   btnPlay: $('btn-play'), btnSnap: $('btn-snap'),
+  seek: $('seek'), time: $('t-time'),
   tMs: $('t-ms'), tFps: $('t-fps'), tN: $('t-n'),
 };
 
@@ -190,6 +191,7 @@ function loadVideo(src, label) {
     state.frameReady = false;
     say(`${label} · ${els.video.videoWidth}×${els.video.videoHeight}`, 'ok');
     refreshPlayButton();
+    updateSeek();
     draw();
   };
   els.video.onerror = () => {
@@ -198,10 +200,24 @@ function loadVideo(src, label) {
   };
 }
 
+function clock(seconds) {
+  if (!Number.isFinite(seconds)) return '0:00';
+  const m = Math.floor(seconds / 60);
+  return `${m}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+}
+
+function updateSeek() {
+  if (state.scrubbing) return;
+  const d = els.video.duration;
+  els.seek.value = Number.isFinite(d) && d > 0 ? (els.video.currentTime / d) * 1000 : 0;
+  els.time.textContent = `${clock(els.video.currentTime)} / ${clock(d)}`;
+}
+
 function refreshPlayButton() {
   const ready = state.session && els.video.src;
   els.btnPlay.disabled = !ready;
   els.btnSnap.disabled = !ready;
+  els.seek.disabled = !ready;
 }
 
 /* ---------------- rendering ---------------- */
@@ -211,10 +227,10 @@ function draw() {
   const H = els.overlay.height;
   ctx.clearRect(0, 0, W, H);
 
-  // While playing, cover the running video with the frame the boxes belong to.
-  // While paused the canvas stays transparent, so the video and its native
-  // controls remain usable and the boxes already match what is on screen.
-  if (els.optSync.checked && state.frameReady && !els.video.paused) {
+  // Cover the running video with the frame the boxes were computed from, so
+  // picture and boxes never disagree. Seeking re-runs inference, so the frame
+  // stays correct while paused too.
+  if (els.optSync.checked && state.frameReady) {
     ctx.drawImage(frames[shownFrame], 0, 0);
   }
   if (!state.detections.length) return;
@@ -311,6 +327,7 @@ async function infer() {
 function onFrame() {
   if (!els.video.paused && !els.video.ended) infer();
   draw();
+  updateSeek();
   schedule();
 }
 
@@ -322,10 +339,28 @@ function schedule() {
 
 /* ---------------- actions ---------------- */
 
-els.btnPlay.onclick = () => {
-  if (els.video.paused) els.video.play().catch((e) => say(e.message, 'err'));
-  else els.video.pause();
+els.btnPlay.onclick = async () => {
+  if (!els.video.paused) {
+    els.video.pause();
+    return;
+  }
+  // analyse the first frame before playing, otherwise the video runs at full
+  // speed until the first result lands and only then drops to inference pace
+  if (!state.frameReady) {
+    await infer();
+    draw();
+  }
+  els.video.play().catch((e) => say(e.message, 'err'));
 };
+
+els.seek.addEventListener('input', () => {
+  state.scrubbing = true;
+  const d = els.video.duration;
+  if (Number.isFinite(d)) els.video.currentTime = (els.seek.value / 1000) * d;
+  els.time.textContent = `${clock(els.video.currentTime)} / ${clock(d)}`;
+});
+els.seek.addEventListener('change', () => { state.scrubbing = false; });
+els.video.addEventListener('timeupdate', updateSeek);
 
 // the loop follows the video's real state, so the button and the native
 // controls (play, pause, seeking) drive it interchangeably

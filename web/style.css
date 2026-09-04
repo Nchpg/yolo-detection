@@ -435,7 +435,36 @@ body {
   border: 1px solid var(--line);
   background: #101314;
 }
-.transport .spacer { flex: 1; }
+.seek {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 3px;
+  background: var(--line-hot);
+  cursor: pointer;
+}
+.seek::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px; height: 11px;
+  background: var(--ink-dim);
+  border: 2px solid #0d0f10;
+}
+.seek:enabled::-webkit-slider-thumb { background: var(--amber); }
+.seek::-moz-range-thumb {
+  width: 11px; height: 11px;
+  border-radius: 0;
+  background: var(--amber);
+  border: 2px solid #0d0f10;
+}
+.seek:disabled { opacity: .4; cursor: not-allowed; }
+
+.time {
+  font-size: 11px;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 74px;
+  text-align: right;
+}
 
 .gauge {
   display: flex;

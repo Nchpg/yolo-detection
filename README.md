@@ -1,5 +1,7 @@
 # Traffic Vision
 
+![Detection running in the browser](docs/demo.gif)
+
 Vehicle and number-plate detection on the Kaggle
 [Traffic vehicles Object Detection](https://www.kaggle.com/datasets/saumyapatel/traffic-vehicles-object-detection)
 dataset: `Car`, `Number Plate`, `Blur Number Plate`, `Two Wheeler`, `Auto`, `Bus`, `Truck`.

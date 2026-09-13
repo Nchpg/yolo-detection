@@ -381,8 +381,6 @@ async function infer() {
 
     const { detections, nc } = await Detector.run(
       state.session, preCtx, frames[next],
-      state.inputW, state.inputH,
-      frames[next].width, frames[next].height,
       { conf: parseFloat(els.conf.value), iou: NMS_IOU },
     );
 

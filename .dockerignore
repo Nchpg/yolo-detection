@@ -2,6 +2,3 @@
 docs/
 notebooks/
 README.md
-# Vercel's copy of the headers nginx.conf now sets. Kept in the repository, not
-# served from the image.
-web/vercel.json

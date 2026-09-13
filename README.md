@@ -55,8 +55,6 @@ web/
 ├── index.html, style.css
 ├── detector.js               letterbox, decode, NMS
 ├── app.js                    interface
-├── vercel.json               cross-origin isolation headers, required for
-│                            multithreaded WASM
 ├── models/best.onnx
 └── demo/                     sample videos
 ```
